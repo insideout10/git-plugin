@@ -22,6 +22,7 @@ function igit_ajax_post_hook() {
 
     // Get the directory and filename where to store the data.
     $body      = str_replace( '\"', '"', $_POST['payload'] );
+    $body      = str_replace( "\\'", "'", $body );
     $directory = igit_config_get( IGIT_SETTINGS_ARCHIVE_DIRECTORY, sys_get_temp_dir() );
     $filename  = tempnam( $directory, 'igit-' );
     if ( false === file_put_contents( $filename , $body ) ) {
