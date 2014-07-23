@@ -13,26 +13,65 @@ function igit_ajax_post_hook() {
         wp_die( __( 'The key parameter is not set or is invalid.', IGIT_LANGUAGE_DOMAIN ) );
     }
 
-    // TODO: check that the key is valid.
+    // Get the body.
+    $body = file_get_contents("php://input");
 
-    // Get the request body.
-    if ( ! isset( $_POST['payload'] ) || empty( $_POST['payload']) ) {
-        wp_die( __( 'The payload parameter is not set or is empty.', IGIT_LANGUAGE_DOMAIN ) );
+    igit_write_log( 'Data saved locally [ filename :: {filename} ]', array( 'filename' => $filename ) );
+
+    // If the body starts with a payload, get the data part.
+    if ( 0 === strpos( $body, 'payload=' ) ) {
+        $body = urldecode( substr( $body, strlen( 'payload=' ) ) );
     }
 
     // Get the directory and filename where to store the data.
-    $body      = str_replace( '\"', '"', $_POST['payload'] );
-    $body      = str_replace( "\\'", "'", $body );
+//    $body      = str_replace( '\"', '"', $_POST['payload'] );
+//    $body      = str_replace( "\\'", "'", $body );
     $directory = igit_config_get( IGIT_SETTINGS_ARCHIVE_DIRECTORY, sys_get_temp_dir() );
     $filename  = tempnam( $directory, 'igit-' );
     if ( false === file_put_contents( $filename , $body ) ) {
         wp_die( __( 'An error occurred while trying to save the data locally.', IGIT_LANGUAGE_DOMAIN ) );
     }
 
-    igit_write_log( 'Data saved locally [ filename :: {filename} ]', array( 'filename' => $filename ) );
+    // Get the request body.
+    if ( null === ( $json = json_decode( $body ) ) ) {
+        igit_write_log( 'The payload is invalid [ body :: {body} ]', array( 'body' => $body ) );
+        wp_die( __( 'The payload is invalid.', IGIT_LANGUAGE_DOMAIN ) );
+    }
 
-    // Extract repository data and clone it.
-    $json = json_decode( $body );
+    // Check if Bitbucket or GitHub.
+    if ( isset( $json->repository->url ) && 0 === strpos( $json->repository->url, 'https://github.com/' ) ) {
+        // GitHub.
+    } else {
+        // BitBucket
+        igit_bitbucket( $json );
+    }
+}
+add_action( 'wp_ajax_nopriv_igit_post_hook', 'igit_ajax_post_hook' );
+
+
+function igit_github( $json ) {
+
+    // Validate the JSON.
+    if ( ! isset( $json->repository->url ) || ! isset( $json->repository->name )) {
+
+        igit_write_log( 'JSON data is invalid' );
+        wp_die( __( 'JSON data is invalid.', IGIT_LANGUAGE_DOMAIN ) );
+
+    }
+
+    // Get the repo GIT URL.
+    $url  = 'git@github.com:' . substr( $json->repository->url, strlen( 'https://github.com/' ) );
+
+    // Add the key for the bitbucket host.
+    igit_ssh_add_key( 'github.com' );
+
+    // Clone the repo.
+    igit_git_clone( $url, $json->repository->name );
+
+}
+
+
+function igit_bitbucket( $json ) {
 
     // Validate the JSON.
     if ( ! isset( $json->canon_url )
@@ -49,13 +88,13 @@ function igit_ajax_post_hook() {
 
     $url  = "git@bitbucket.org:" . substr( $json->repository->absolute_url, 1 );
 
+    // Add the key for the bitbucket host.
+    igit_ssh_add_key( 'bitbucket.org' );
+
     // Clone the repo.
     igit_git_clone( $url, $slug );
 
-    echo $body;
-
 }
-add_action( 'wp_ajax_nopriv_igit_post_hook', 'igit_ajax_post_hook' );
 
 
 /**
@@ -86,9 +125,6 @@ function igit_git_clone( $url, $slug) {
     }
 
     igit_write_log( 'Executing [ command :: {command} ]', array( 'command' => $command ) );
-
-    // Add the key for the bitbucket host.
-    igit_ssh_add_key( "bitbucket.org" );
 
     // Exec the command line.
     $output  = shell_exec( $command );
