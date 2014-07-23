@@ -60,14 +60,15 @@ function igit_github( $json ) {
 
     }
 
+    // TODO: add support for private repos.
     // Get the repo GIT URL.
-    $url  = 'git@github.com:' . substr( $json->repository->url, strlen( 'https://github.com/' ) );
+    // $url  = 'git@github.com:' . substr( $json->repository->url, strlen( 'https://github.com/' ) );
 
     // Add the key for the bitbucket host.
     igit_ssh_add_key( 'github.com' );
 
     // Clone the repo.
-    igit_git_clone( $url, $json->repository->name );
+    igit_git_clone( $json->repository->url, $json->repository->name );
 
 }
 
@@ -83,7 +84,7 @@ function igit_bitbucket( $json ) {
     }
 
     // Get the repo GIT URL.
-    $url  = $json->canon_url . $json->repository->absolute_url;
+//    $url  = $json->canon_url . $json->repository->absolute_url;
     // Get the repo slug.
     $slug = $json->repository->slug;
 
