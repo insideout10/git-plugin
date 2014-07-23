@@ -41,6 +41,7 @@ function igit_ajax_post_hook() {
     // Check if Bitbucket or GitHub.
     if ( isset( $json->repository->url ) && 0 === strpos( $json->repository->url, 'https://github.com/' ) ) {
         // GitHub.
+        igit_github( $json );
     } else {
         // BitBucket
         igit_bitbucket( $json );
