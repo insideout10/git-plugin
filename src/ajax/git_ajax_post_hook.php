@@ -16,8 +16,6 @@ function igit_ajax_post_hook() {
     // Get the body.
     $body = file_get_contents("php://input");
 
-    igit_write_log( 'Data saved locally [ filename :: {filename} ]', array( 'filename' => $filename ) );
-
     // If the body starts with a payload, get the data part.
     if ( 0 === strpos( $body, 'payload=' ) ) {
         $body = urldecode( substr( $body, strlen( 'payload=' ) ) );
@@ -31,6 +29,8 @@ function igit_ajax_post_hook() {
     if ( false === file_put_contents( $filename , $body ) ) {
         wp_die( __( 'An error occurred while trying to save the data locally.', IGIT_LANGUAGE_DOMAIN ) );
     }
+
+    igit_write_log( 'Data saved locally [ filename :: {filename} ]', array( 'filename' => $filename ) );
 
     // Get the request body.
     if ( null === ( $json = json_decode( $body ) ) ) {
