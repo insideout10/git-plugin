@@ -14,7 +14,7 @@ function igit_ajax_post_hook() {
     }
 
     // Get the body.
-    $body = file_get_contents("php://input");
+    $body = file_get_contents( 'php://input' );
 
     // If the body starts with a payload, get the data part.
     if ( 0 === strpos( $body, 'payload=' ) ) {
@@ -22,8 +22,6 @@ function igit_ajax_post_hook() {
     }
 
     // Get the directory and filename where to store the data.
-//    $body      = str_replace( '\"', '"', $_POST['payload'] );
-//    $body      = str_replace( "\\'", "'", $body );
     $directory = igit_config_get( IGIT_SETTINGS_ARCHIVE_DIRECTORY, sys_get_temp_dir() );
     $filename  = tempnam( $directory, 'igit-' );
     if ( false === file_put_contents( $filename , $body ) ) {
@@ -119,7 +117,7 @@ function igit_git_clone( $url, $slug) {
     $command = "$git ";
     if ( file_exists( $directory ) && is_dir( $directory ) ) {
         // Update
-        chdir($directory );
+        chdir( $directory );
         $command .= "pull";
     } else {
         // Set up the command line.
@@ -142,12 +140,19 @@ function igit_git_clone( $url, $slug) {
         wp_die( __( 'The repo configuration is missing the slug name.', IGIT_LANGUAGE_DOMAIN ) );
     }
 
-    $plugin_dir = WP_PLUGIN_DIR . '/' . $json->slug . '/';
-    $copy_r     = "/bin/cp -R $directory/src/* $plugin_dir";
+    // Determine the destination directory.
+    $destination = ( isset( $json->type ) && 'theme' === $json->type ? get_theme_root() : WP_PLUGIN_DIR )
+        . '/' . $json->slug . '/';
+
+    // Determine the source directory (by default we append a */src*).
+    $source      = $directory . ( isset( $json->source ) ?  '/' . $json->source : '/src/' );
+
+    // Define the copy command line.
+    $copy_r      = "/bin/cp -R $source* $destination";
 
     igit_write_log( 'Copying [ command :: {command} ]', array( 'command' => $copy_r ) );
 
-    $output     = shell_exec( $copy_r );
+//    $output     = shell_exec( $copy_r );
 
     igit_write_log( 'Copied [ output :: {output} ]', array( 'output' => $output ) );
 
