@@ -152,7 +152,7 @@ function igit_git_clone( $url, $slug) {
 
     igit_write_log( 'Copying [ command :: {command} ]', array( 'command' => $copy_r ) );
 
-//    $output     = shell_exec( $copy_r );
+    $output     = shell_exec( $copy_r );
 
     igit_write_log( 'Copied [ output :: {output} ]', array( 'output' => $output ) );
 
